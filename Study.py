@@ -1,6 +1,8 @@
 #Package Imports
-import pygame, sys, random
+import pygame, sys, tkinter as tk
+from tkinter import messagebox
 from pygame.locals import *
+from random import *
 
 #########################################
 ##Example User Defined Event (Right before main game loop)
@@ -13,6 +15,16 @@ from pygame.locals import *
 ##  elif event.type == pygame.USEREVENT:
 ##	print ( "You have pressed a, b, and c" )
 #########################################
+
+# Function quit with a dialogue option
+def quit():
+	root = tk.Tk()
+	root.withdraw()
+	result = messagebox.askquestion("Warning","Do you want to quit?", icon="warning")
+	if result == 'yes':
+		pygame.time.set_timer ( pygame.USEREVENT , 0 )
+		pygame.quit()
+		sys.exit()
 
 #Initilizer for pygame
 pygame.init()
@@ -59,7 +71,7 @@ PossibleTrialsList = [ [Sm,Cl,Le], [Sm,Fa,Le], [Sm,Cl,Ri], [Sm,Fa,Ri],   [Me,Cl,
 # Initiliztion of the trial block
 trialBlock = []
 # The random function will give a predictible pattern each run
-random.seed = 50
+seed(50)
 
 # Generate the first block of random trials
 for trial in PossibleTrialsList:
@@ -78,8 +90,7 @@ while True:
 
 		# Player clicks the red "X" button on window
 		if event.type == QUIT :
-			pygame.quit()
-			sys.exit()
+			quit()
 			
 		# Add 1 to seconds to gameSeconds var every 1000ms	
 		elif event.type == pygame.USEREVENT: 
@@ -88,14 +99,12 @@ while True:
 		# Key Press Down Event (ASCII Codes)
 		elif event.type == pygame.KEYDOWN:
 			# If excape key was pressed quit the game
-			if event.key == ord( "ESC" ): 
-				pygame.time.set_timer ( pygame.USEREVENT , 0 )
-				pygame.quit()
-				sys.exit()	
+			if event.key == 27: 
+				quit()	
 				
 			#Pressing space to complete the instructions and then tutorials to move on to the trials
 			# If space bar is pressed
-			if event.key == ord( "space" ):
+			if event.key == 32:
 				#Allow the player to complete the instructions 
 				# if they haven't yet and 15 seconds or more have passed
 				if instructionsComplete == False and gameSeconds >= 15:
