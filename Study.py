@@ -1,5 +1,6 @@
 #Package Imports
-import pygame, sys, tkinter as tk
+import pygame, sys, tkinter as tk, math
+from pygame.locals import *
 from tkinter import messagebox
 from pygame.locals import *
 from random import *
@@ -26,15 +27,20 @@ def quit():
 		pygame.quit()
 		sys.exit()
 
-#Initilizer for pygame
+# Initilizer for pygame
 pygame.init()
+print("Pygame initilized")
+
+# Frames per second setting
+FPS = 30
+fpsClock = pygame.time.Clock()
 
 # With and Height of the app window
-width = 400
-height = 300
+WIDTH = 1440
+HEIGHT = 900
 
 # Displaying the window
-DISPLAYSURF = pygame.display.set_mode((0, 0), FULLSCREEN)
+DISPLAYSURF = pygame.display.set_mode([WIDTH, HEIGHT])
 
 # Window Caption
 pygame.display.set_caption('HCI Gold Group - Study')
@@ -53,8 +59,14 @@ tutorialsComplete = False
 tutorialsDoneTime = 0
 # Number of trials completed
 trialDoneCounter = 0
-# Number of testing blocks completed (1 block = 12 trials)
-BlocksCompleted = 0
+# Number of testing blocks completed 
+blocksCompleted = 0
+# Number of click errors
+clickErrors = 0
+# Starting check 
+start = False
+# Set up colors
+WHITE = (255, 255, 255)
 
 # Trial possibility list that will be used to build random trial stacks
 # Types: size-radius=(Small, Medium, Large), distance-to-center=(close, far),      direction=(Left, Right)
@@ -68,7 +80,7 @@ Le = -1
 Ri = 1
 # Organized list sorted by Size then direction then distance
 PossibleTrialsList = [ [Sm,Cl,Le], [Sm,Fa,Le], [Sm,Cl,Ri], [Sm,Fa,Ri],   [Me,Cl,Le], [Me,Fa,Le], [Me,Cl,Ri], [Me,Fa,Ri],   [La,Cl,Le], [La,Fa,Le], [La,Cl,Ri], [La,Fa,Ri] ]
-# Initiliztion of the trial block
+# Initiliztion of the trial block (1 block = 12 trials)
 trialBlock = []
 # The random function will give a predictible pattern each run
 seed(50)
@@ -79,102 +91,155 @@ for trial in PossibleTrialsList:
 		trialBlock.append(trial)
 	else: # Insert the trial at the start of the block if 2
 		trialBlock.insert(0,trial)
-		
+print("First block generated: " + str(trialBlock) )		
 # The trail currently being performed
 currentTrial = trialBlock.pop()
+print("First trial: " + str(currentTrial))
 
 # Main game loop
 while True: 
 	# Pygame event handler
 	for event in pygame.event.get():
-
+		
 		# Player clicks the red "X" button on window
 		if event.type == QUIT :
+			print("red x quit")
 			quit()
 			
 		# Add 1 to seconds to gameSeconds var every 1000ms	
 		elif event.type == pygame.USEREVENT: 
 			gameSeconds += 1
 		
+		# Display the instructions if they haven't been read yet
+		if instructionsComplete == False and start == False:
+			start = True
+			print("instructions loaded")
+			instructionsImg = pygame.image.load('instructions.png')
+			DISPLAYSURF.blit(instructionsImg, [0, 0])
+			print("after instructions loaded")
+		
 		# Key Press Down Event (ASCII Codes)
-		elif event.type == pygame.KEYDOWN:
+		if event.type == pygame.KEYDOWN:
+			print("Keydown event activated")
+			
 			# If excape key was pressed quit the game
 			if event.key == 27: 
+				print("ESC Pressed")
 				quit()	
 				
 			#Pressing space to complete the instructions and then tutorials to move on to the trials
 			# If space bar is pressed
 			if event.key == 32:
+				print("Spacebar Pressed")
+				print(str(gameSeconds))
 				#Allow the player to complete the instructions 
 				# if they haven't yet and 15 seconds or more have passed
-				if instructionsComplete == False and gameSeconds >= 15:
+				if instructionsComplete == False and gameSeconds >= 5:
+					print("Instructions Completed")
 					instructionsComplete == True
+					# Clear the screen of the instructions
+					DISPLAYSURF.fill( (0,0,0) )
 					
-				# Allow the player to complete the tutorial and move to actual trials
-				# if the instructions are complete, the tutorials haven't been yet, and the player has completed 3 or more test trials 
-				if instructionsComplete == True and tutorialComplete == False and trialDoneCounter <=3:
-					#mark the time that the tutorials were completed
-					tutorialsDoneTime = gameSeconds
-					# Zero out trials completed as the ones done thus far were pratice
-					trialDoneCounter = 0
-					tutorialComplete == true
-					inTrials = true
-					##needs more work here
+				
+				# Start doing trials (tutorial first)
+				if instructionsComplete == True:
+					print(str(instructionsComplete))
+					print("In trials now and drew the first trial circle")
+					# Now in trials
+					inTrials = True
+					
+					print( str(int(WIDTH/2+(currentTrial[1]*currentTrial[2]))) )
+					print( str(int(HEIGHT/2)) )
+					print( str(currentTrial[0]) )
+					print( str(currentTrial[2]) )
+					# Draw the current trial circle (when space bar is pressed) 
+					pygame.draw.circle(DISPLAYSURF, WHITE, [20, 20], 1000)
+					# pygame.draw.circle(DISPLAYSURF, WHITE, [WIDTH//2+(currentTrial[1] * currentTrial[2]), HEIGHT//2], currentTrial[0], 0)
+					
+					# Current trial being completed
+					trialDoneCounter += 1
+					
+					# if the tutorials haven't been done yet, and the player has completed 3 or more test trials 
+					if trialDoneCounter >=3 and tutorialsComplete == False:
+						print("Tutorials Completed" + str(tutorialsComplete))
+						#mark the time that the tutorials were completed
+						tutorialsDoneTime = gameSeconds
+						# Mark the tutorials as completed
+						tutorialsComplete == True
+						# Reset the trial block so it gets regenerated for real trials
+						trialBlock = []
+						# Reset the number of trials completed as the previous ones are just tutorials
+						trialDoneCounter = 0
+						# Clear the screen of the last trial
+						DISPLAYSURF.fill( (0,0,0) )
 				
 		# Mouse Press Down Event		
-		elif event.type == pygame.MOUSEBUTTONDOWN:
+		elif event.type == pygame.MOUSEBUTTONDOWN and inTrials == True:
+			print("Mouse Down Event Activated")
 			# Set the position of the mouse as x and y when clicked
 			x, y = event.pos
 			
-			##Need to create the object class being clicked (i.e. CircleObject)
+			click = DISPLAYSURF.get_at(pygame.mouse.get_pos()) == WHITE
+			
 			# Sucessful click on the circle object
-			if clickobject.get_rect().collidepoint(x,y) == True:
-				## Remove current trail circle objects
+			if click == 1:
+				print("Click successful")
+				##Do other stuff as well like print to a file about the trial info, errors, time completed, etc
+				
+				# Clear the surface of the completed trial circle
+				DISPLAYSURF.fill( (0,0,0) )
 				## Display a success message or make a success sound
-				## After a few game seconds display the next trial circle objects
+				successImg = pygame.image.load('success.png')
+				# Clear the surface of the success message
+				DISPLAYSURF.fill( (0,0,0) )
 				
 				# If currently in a trial
 				if inTrials == True:
-					## Increase successful trial counter
-					# Pop the current test block stack
-					trialBlock.pop()
-					## Generate the next trial stack from current block
-					
+					# Increase successful trial counter
+					trialDoneCounter += 1
+
 					# If test block is empty generate the next block
 					if not trialBlock:
+						# Increment the number of blocks completed
+						blocksCompleted += 1
+						
 						# Generate the next block of random trials
 						for trial in PossibleTrialsList:
-							if randint(1,2) == 1: # Insert the trial at the end of the block if 1
+							choice = randint(1,3) # Three random choices
+							if choice == 1: # Insert the trial at the end of the block
 								trialBlock.append(trial)
-							else: # Insert the trial at the start of the block if 2
+							elif choice == 2: # Insert the trial at the start of the block
 								trialBlock.insert(0,trial)
-					##   and increment the blocksCompleted var
-					
-					##Remove the code below with actual code
-					tempNonsense = 0
-		
+							else: # Insert the trial at the middle of the block
+								trialBlock.insert(len(trialBlock)/2,trial)
+										
+					# Pop the current test block stack to get the next trial
+					currentTrial = trialBlock.pop()
 					
 			# Unsuccessful click on the circle object
-			if clickobject.get_rect().collidepoint(x,y):
+			else:
+				print("click unsuccessful")
 				# If currently in a trial
 				if inTrials == True:
-					## Increase click error count var
-					
-					
-					##Remove the place holder code below with actual code
-					tempNonsense = 0
-		
+					print("Click is trial misclick error")
+					# Increase click error count 
+					clickErrors += 1
+				
 		# Display section
 		## Display number of trials completed vs needed to do yet (i.e. 2/120)
 		## Code to do this ^ here	
 		
-		if BlocksCompleted == 10:
-			##Do other stuff as well like print
+		if blocksCompleted == 10:
+			print("10 blocks completed")
+			##Do other stuff as well like print maybe
 			pygame.quit()
 			sys.exit()
+			
 	# Draw/Update the screen		
 	pygame.display.update()
 	
+	# Tick the fps clock
+	fpsClock.tick(FPS)
 	
 	
 	
