@@ -40,7 +40,6 @@ def quit():
 
 # Initilizer for pygame
 pygame.init()
-print("Pygame initilized")
 
 # Frames per second setting
 FPS = 30
@@ -110,6 +109,8 @@ totalPixTrav = 0
 prevPos = (-1,-1)
 # Starting check 
 start = False
+# Boolean to prevent a user from just spamming space bar through the trials
+trialCompleted = True
 # Set up colors
 BLACK = (0,0,0)
 # Main logic controler
@@ -141,11 +142,9 @@ for trial in PossibleTrialsList:
 		trialBlock.append(trial)
 	else: # Insert the trial at the start of the block if 2
 		trialBlock.insert(0,trial)
-print("First block generated: " + str(trialBlock) )		
+		
 # The trail currently being performed
 currentTrial = trialBlock.pop()
-print("First trial: " + str(currentTrial))
-print("block now: " + str(trialBlock))
 
 #################################################################
 ## Main Logic Section
@@ -188,7 +187,7 @@ while True:
 			DISPLAYSURF.blit(instructionsImg, [0, 0])
 		
 		# Key Press Down Event (ASCII Codes)
-		elif event.type == pygame.KEYDOWN  and done == False:
+		elif event.type == pygame.KEYDOWN:
 			
 			# If excape key was pressed quit the game
 			if event.key == 27: 
@@ -196,17 +195,17 @@ while True:
 				
 			#Pressing space to complete the instructions and then tutorials to move on to the trials
 			# If space bar is pressed
-			elif event.key == 32:
+			elif event.key == 32  and done == False:
 				#Allow the player to complete the instructions 
 				# if they haven't yet and 5 seconds or more have passed
 				if instructionsComplete == False and gameMilliseconds >= 500:
-					print(str(instructionsComplete))
 					instructionsComplete = True
 				
 				# Start doing trials (tutorial first)
-				elif instructionsComplete == True:
+				elif instructionsComplete == True and trialCompleted == True:
 					# Now in trials
 					inTrials = True
+					trialCompleted = False
 					
 					# Clear the screen
 					DISPLAYSURF.fill( (255,255,255) )
@@ -221,7 +220,6 @@ while True:
 					
 					# If test block is empty generate the next block
 					if not trialBlock:
-						print("Block empty")
 						# Increment the number of blocks completed
 						blocksCompleted += 1
 						
@@ -251,6 +249,8 @@ while True:
 						tutorialsDoneTime = gameMilliseconds
 						# Mark the tutorials as completed
 						tutorialsComplete = True
+						# Tutorial is now completed can move on to the next trial
+						trialCompleted = True
 						# Record mouse coursor movement now
 						watchMouse = True
 						# Reset the trial block so it gets regenerated for real trials
@@ -272,7 +272,9 @@ while True:
 			
 			# Sucessful click on the circle object
 			if click == 1:
-				##Do other stuff as well like print to a file about the trial info, errors, time completed, etc
+				# Trial is now completed can move on to the next
+				trialCompleted = True
+				
 				# Completed Trials count
 				trialDoneCounter += 1
 					
@@ -281,9 +283,6 @@ while True:
 					# Total Trial Runtime accumulator and total mouse pixles traveled 
 					RunTimeAccumulator += gameMilliseconds-trialStartTime
 					totalPixTrav += pixlesTravled
-					
-					print( str(currentTrial[1]) + " * 2")
-					print( str(currentTrial[0]) + " * 2")
 					
 					# Prepair Print Line and write record to file
 					printLine = (str(trialDoneCounter) + "; " + str(currentTrial) +"; "+ 
@@ -314,18 +313,15 @@ while True:
 			# Load the end screen image
 			endImg = pygame.image.load('end.png')
 			DISPLAYSURF.blit(endImg, [0, 0])
-			# Display end game statistics (Misclicks, total Trials, Seconds in Time/trial)
-			label = myfont.render("Total Misclicks: "+ str(totalErrors) , 1, (1,1,1))
-			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4))
-			label = myfont.render("Total Trials: "+ str(trialDoneCounter) , 1, (1,1,1))
-			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 + 10))
-			label = myfont.render("Average Time/Trial (Milliseconds): "+ str(RunTimeAccumulator//trialDoneCounter) , 1, (1,1,1))
-			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 + 20)) 
-			
-			print(str(totalPixTrav) + "/" + str(trialDoneCounter) )
-			
-			label = myfont.render("Average Mouse Distance Traveled/Trial (Pixles): "+ str(totalPixTrav//trialDoneCounter) , 1, (1,1,1))
-			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 + 30)) 
+			# Display end game statistics (Misclicks, total Trials, Milliseconds in Time/trial, total pixles mouse traveled/trial)
+			label = myfont.render("Total Misclicks: "+ str(totalErrors) , 3, (1,1,1))
+			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 - 100))
+			label = myfont.render("Total Trials: "+ str(trialDoneCounter) , 3, (1,1,1))
+			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 + 20 - 100))
+			label = myfont.render("Average Time/Trial (Milliseconds): "+ str(RunTimeAccumulator//trialDoneCounter) , 3, (1,1,1))
+			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 + 40 - 100)) 
+			label = myfont.render("Average Mouse Distance Traveled/Trial (Pixles): "+ str(totalPixTrav//trialDoneCounter) , 3, (1,1,1))
+			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 + 60 - 100)) 
 	
 	# render current progress text
 	if inTrials == True:
