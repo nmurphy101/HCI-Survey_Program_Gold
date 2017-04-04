@@ -55,6 +55,9 @@ DISPLAYSURF = pygame.display.set_mode([WIDTH, HEIGHT])
 # Window Caption
 pygame.display.set_caption('HCI Gold Group - Study')
 
+# Initial Text Font
+myfont = pygame.font.SysFont("monospace", 15)
+
 #################################################################
 ## User Created Event Section
 #################################################################
@@ -69,7 +72,8 @@ gameMilliseconds = 0
 #################################################################
 
 f = open('results.txt', 'w')
-printLine = ("Trials Done " + ", " + "Current Trial " +", "+ "Milliseconds Spent on Trial " + ", "+ "# of MisClicks" + "\n")
+printLine = ("Trials Done " + ", " + "Current Trial " +", "+ "Milliseconds Spent on Trial " + ", "
+		   + "# of MisClicks" + ", "+ "Mouse Pixle Movement" "\n")
 f.write(printLine)
 
 #################################################################
@@ -94,6 +98,8 @@ trialDoneCounter = 0
 blocksCompleted = 0
 # Number of click errors
 clickErrors = 0
+# Amount of mouse cursor movement in x and y directions
+mouseMovement = (0,0)
 # Starting check 
 start = False
 # Set up colors
@@ -117,6 +123,7 @@ PossibleTrialsList = [ [Sm,Cl,Le], [Sm,Fa,Le], [Sm,Cl,Ri], [Sm,Fa,Ri],
 			       [La,Cl,Le], [La,Fa,Le], [La,Cl,Ri], [La,Fa,Ri]        ]
 # Initiliztion of the trial block (1 block = 12 trials)
 trialBlock = []
+
 # The random function will give a predictible pattern each run
 seed(50)
 
@@ -130,6 +137,7 @@ print("First block generated: " + str(trialBlock) )
 # The trail currently being performed
 currentTrial = trialBlock.pop()
 print("First trial: " + str(currentTrial))
+print("block now: " + str(trialBlock))
 
 #################################################################
 ## Main Logic Section
@@ -169,7 +177,7 @@ while gameDone == False:
 				print(str(gameMilliseconds))
 				#Allow the player to complete the instructions 
 				# if they haven't yet and 5 seconds or more have passed
-				if instructionsComplete == False and gameMilliseconds >= 1500:
+				if instructionsComplete == False and gameMilliseconds >= 500:
 					print("Instructions Completed")
 					print(str(instructionsComplete))
 					instructionsComplete = True
@@ -184,12 +192,36 @@ while gameDone == False:
 					# Clear the screen
 					DISPLAYSURF.fill( (255,255,255) )
 					
-					# Reset PrintLine and click errors count
+					# Reset PrintLine, click errors count, and mouse movement
 					printLine = ''
 					clickErrors = 0
+					mouseMovement = (0,0)
 					
 					# Center the mouse cursor
 					ctypes.windll.user32.SetCursorPos(WIDTH//2, HEIGHT//2 + 33)
+					
+					# If test block is empty generate the next block
+					if not trialBlock:
+						# Increment the number of blocks completed
+						blocksCompleted += 1
+						
+						# Generate the next block of random trials
+						for trial in PossibleTrialsList:
+							choice = randint(1,3) # Three random choices
+							if choice == 1: # Insert the trial at the end of the block
+								trialBlock.append(trial)
+							elif choice == 2: # Insert the trial at the start of the block
+								trialBlock.insert(0,trial)
+							else: # Insert the trial at the middle of the block
+								trialBlock.insert(len(trialBlock)//2,trial)
+					
+					print("block now: " + str(trialBlock))							
+					# Pop the current test block stack to get the next trial
+					currentTrial = trialBlock.pop()
+					
+					#Start recording mouse 
+					mouseMovement = pygame.mouse.get_rel()
+					print("First Mouse: " + str(mouseMovement))
 					
 					# Mark the start time of the trial in milliseconds
 					trialStartTime = gameMilliseconds
@@ -214,6 +246,8 @@ while gameDone == False:
 						tutorialsDoneTime = gameMilliseconds
 						# Mark the tutorials as completed
 						tutorialsComplete = True
+						# Record mouse coursor movement now
+						watchMouse = True
 						# Reset the trial block so it gets regenerated for real trials
 						trialBlock = []
 						# Reset the number of trials completed as the previous ones are just tutorials
@@ -235,37 +269,19 @@ while gameDone == False:
 			if click == 1:
 				print("Click successful")
 				##Do other stuff as well like print to a file about the trial info, errors, time completed, etc
-				
+				mouseMovement = pygame.mouse.get_rel()
+				print("Second Mouse: " + str(mouseMovement))
 				# Prepair Print Line and write record to file
-				printLine = (str(trialDoneCounter) + ", " + str(currentTrial) +", "+ str(gameMilliseconds-trialStartTime) + ", "+ str(clickErrors) + "\n")
+				printLine = (str(trialDoneCounter) + ", " + str(currentTrial) +", "+ 
+						   str(gameMilliseconds-trialStartTime) + ", "+ str(clickErrors) + 
+						   str(mouseMovement[0]+mouseMovement[1]) + "\n")
 				f.write(printLine)
 				
 				# Clear the surface of the completed trial circle
 				DISPLAYSURF.fill( (255,255,255) )
 				## Display a success message or make a success sound
 				successImg = pygame.image.load('success.png')
-				DISPLAYSURF.blit(successImg, [0, 0])
-				
-				# If currently in a trial
-				if inTrials == True:
-
-					# If test block is empty generate the next block
-					if not trialBlock:
-						# Increment the number of blocks completed
-						blocksCompleted += 1
-						
-						# Generate the next block of random trials
-						for trial in PossibleTrialsList:
-							choice = randint(1,3) # Three random choices
-							if choice == 1: # Insert the trial at the end of the block
-								trialBlock.append(trial)
-							elif choice == 2: # Insert the trial at the start of the block
-								trialBlock.insert(0,trial)
-							else: # Insert the trial at the middle of the block
-								trialBlock.insert(len(trialBlock)//2,trial)
-										
-					# Pop the current test block stack to get the next trial
-					currentTrial = trialBlock.pop()
+				DISPLAYSURF.blit(successImg, [0, 0])	
 					
 			# Unsuccessful click on the circle object
 			else:
@@ -275,26 +291,27 @@ while gameDone == False:
 					print("Click is trial misclick error")
 					# Increase click error count 
 					clickErrors += 1
-				
-		# Display section
-		## Display number of trials completed vs needed to do yet (i.e. 2/120)
-		## Code to do this ^ here	
 		
-		elif blocksCompleted == 10:
+		elif blocksCompleted == 11:
 			print("10 blocks completed")
-			gameDone = True
-			
+			##Do other stuff as well like print maybe
+			inTrials = False
+			endImg = pygame.image.load('end.png')
+			DISPLAYSURF.blit(endImg, [0, 0])
+	
+	# render text
+	if inTrials == True:
+		label = myfont.render("Trials: "+ str(trialDoneCounter) + "/120" , 1, (0,0,0))
+		DISPLAYSURF.blit(label, (WIDTH//2 - 100 - 150, 20))
+		label = myfont.render("Trial Blocks: "+ str(blocksCompleted) + "/10" , 1, (0,0,0))
+		DISPLAYSURF.blit(label, (WIDTH//2 - 100 +150, 20))	
+		
 	# Draw/Update the screen		
 	pygame.display.update()
 	
 	# Tick the fps clock
 	fpsClock.tick(FPS)
-	
-if gameDone == True:
-		##Do other stuff as well like print maybe
-		DISPLAYSURF.blit(successImg, [0, 0])
-		endImg = pygame.image.load('end.png')
-		DISPLAYSURF.blit(endImg, [0, 0])
+
 	
 	
 	
