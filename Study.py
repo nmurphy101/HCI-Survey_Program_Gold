@@ -1,6 +1,15 @@
 #################################################################
+## Identification Section
+#################################################################
+
+### This program is designed to test the Fitzs' Law and record data from the experiemnt 
+### Created by: Nicholas Murphy
+### Written: 4/4/2017
+
+#################################################################
 ## Imports Section
 #################################################################
+
 #Package Imports
 import pygame, sys, tkinter as tk, math, ctypes
 from pygame.locals import *
@@ -8,21 +17,13 @@ from tkinter import messagebox
 from pygame.locals import *
 from random import *
 
-#########################################
-##Example User Defined Event (Right before main game loop)
-## def checkAllKeys ( a , b , c ):
-##	if a == True and b == True and c == True:
-##		ev = pygame.event.Event ( pygame.USEREVENT )
-##       		pygame.event.post ( ev )
-##------------------------------------------------------------------------------
-##Example of event handling for user defined event (In main game loop)
-##  elif event.type == pygame.USEREVENT:
-##	print ( "You have pressed a, b, and c" )
-#########################################
 
 #################################################################
 ## FUNCTIONS Section
 #################################################################
+
+## Would have converted/optimized a lot of the code in this program into reusable functions if I had more time
+
 # Function quit with a dialogue option
 def quit():
 	root = tk.Tk()
@@ -72,8 +73,9 @@ gameMilliseconds = 0
 #################################################################
 
 f = open('results.txt', 'w')
-printLine = ("Trials Done " + ", " + "Current Trial " +", "+ "Milliseconds Spent on Trial " + ", "
-		   + "# of MisClicks" + ", "+ "Mouse Pixle Movement" "\n")
+# Write the data file headers
+printLine = ("Trial Num" + "; " + "Current Trial" +"; "+ "Time Spent on Trial (ms)" + "; "
+		   + "# of MisClicks" + "; "+ "Mouse Movement (pix)" + "; " + "Difficulty Index (bits)" + "\n")
 f.write(printLine)
 
 #################################################################
@@ -96,16 +98,22 @@ trialTimeTaken = 0
 trialDoneCounter = 0
 # Number of testing blocks completed 
 blocksCompleted = 0
-# Number of click errors
+# Number of click errors and grand total
 clickErrors = 0
-# Amount of mouse cursor movement in x and y directions
-mouseMovement = (0,0)
+totalErrors = 0
+# Total time spent across all trials completed
+RunTimeAccumulator = 0
+# Total distance traveled across all trials completed
+totalPixTrav = 0
+# Initilize the previous position to be nothing as there isn't a previous
+# first time through
+prevPos = (-1,-1)
 # Starting check 
 start = False
 # Set up colors
 BLACK = (0,0,0)
 # Main logic controler
-gameDone = False
+done = False
 
 # Trial possibility list that will be used to build random trial stacks
 # Types: size-radius=(Small, Medium, Large), distance-to-center=(close, far),      direction=(Left, Right)
@@ -144,7 +152,7 @@ print("block now: " + str(trialBlock))
 #################################################################
 
 # Main game loop
-while gameDone == False: 
+while True: 
 	# Pygame event handler
 	for event in pygame.event.get():
 		
@@ -152,10 +160,27 @@ while gameDone == False:
 		if event.type == QUIT :
 			quit()
 			
-		# Add 1 to seconds to gameMilliSeconds var every 1000ms	
+		# Add 1 to milliseconds to gameMilliSeconds var every 1ms	
 		elif event.type == pygame.USEREVENT: 
 			gameMilliseconds += 1
 		
+		#Start recording mouse 
+		elif event.type == pygame.MOUSEMOTION:
+			# Only track mouse movement when in a trial
+			if inTrials:
+				pos = pygame.mouse.get_pos()
+				if prevPos == (-1,-1):
+					prevPos = pos
+				elif pos != prevPos:
+					cX = pos[0]
+					cY = pos[1]
+					pX = prevPos[0]
+					pY = prevPos[1]
+					# Pixeles traveled by the mouse cursor is the difference between the previous
+					# position last tick/frame to where it is currently
+					pixlesTravled = abs(pX - cX) + abs(pY - cY)
+			
+
 		# Display the instructions if they haven't been read yet
 		elif instructionsComplete == False and start == False:
 			start = True
@@ -163,8 +188,7 @@ while gameDone == False:
 			DISPLAYSURF.blit(instructionsImg, [0, 0])
 		
 		# Key Press Down Event (ASCII Codes)
-		elif event.type == pygame.KEYDOWN:
-			print("Keydown event activated")
+		elif event.type == pygame.KEYDOWN  and done == False:
 			
 			# If excape key was pressed quit the game
 			if event.key == 27: 
@@ -173,19 +197,14 @@ while gameDone == False:
 			#Pressing space to complete the instructions and then tutorials to move on to the trials
 			# If space bar is pressed
 			elif event.key == 32:
-				print("Spacebar Pressed")
-				print(str(gameMilliseconds))
 				#Allow the player to complete the instructions 
 				# if they haven't yet and 5 seconds or more have passed
 				if instructionsComplete == False and gameMilliseconds >= 500:
-					print("Instructions Completed")
 					print(str(instructionsComplete))
 					instructionsComplete = True
 				
 				# Start doing trials (tutorial first)
 				elif instructionsComplete == True:
-					print(str(instructionsComplete))
-					print("In trials now and drew circle")
 					# Now in trials
 					inTrials = True
 					
@@ -202,6 +221,7 @@ while gameDone == False:
 					
 					# If test block is empty generate the next block
 					if not trialBlock:
+						print("Block empty")
 						# Increment the number of blocks completed
 						blocksCompleted += 1
 						
@@ -214,34 +234,19 @@ while gameDone == False:
 								trialBlock.insert(0,trial)
 							else: # Insert the trial at the middle of the block
 								trialBlock.insert(len(trialBlock)//2,trial)
-					
-					print("block now: " + str(trialBlock))							
+												
 					# Pop the current test block stack to get the next trial
 					currentTrial = trialBlock.pop()
-					
-					#Start recording mouse 
-					mouseMovement = pygame.mouse.get_rel()
-					print("First Mouse: " + str(mouseMovement))
 					
 					# Mark the start time of the trial in milliseconds
 					trialStartTime = gameMilliseconds
 					
-					print( str(int(WIDTH/2+(currentTrial[1]*currentTrial[2]))) )
-					print( str(int(HEIGHT/2)) )
-					print( str(currentTrial[0]) )
-					print( str(currentTrial[2]) )
 					# Draw the current trial circle (when space bar is pressed) 
 					#pygame.draw.circle(DISPLAYSURF, WHITE, [20, 20], 1000)
 					pygame.draw.circle(DISPLAYSURF, BLACK, [WIDTH//2+(currentTrial[1] * currentTrial[2]), HEIGHT//2], currentTrial[0], 0)
 					
-					# Current trial being completed
-					trialDoneCounter += 1
-					
-					print(str(trialDoneCounter))
-					
 					# if the tutorials haven't been done yet, and the player has completed 3 or more test trials 
 					if trialDoneCounter >=4 and tutorialsComplete == False:
-						print("Tutorials Completed" + str(tutorialsComplete))
 						#mark the time that the tutorials were completed
 						tutorialsDoneTime = gameMilliseconds
 						# Mark the tutorials as completed
@@ -254,12 +259,12 @@ while gameDone == False:
 						trialDoneCounter = 0
 						# Clear the screen of the last trial
 						DISPLAYSURF.fill( (255,255,255) )
+						# Load and display the completed trial feedback image to player
 						TutorialCompleteImg = pygame.image.load('TutorialComplete.png')
 						DISPLAYSURF.blit(TutorialCompleteImg, [0, 0])
 				
 		# Mouse Press Down Event		
-		elif event.type == pygame.MOUSEBUTTONDOWN and inTrials == True:
-			print("Mouse Down Event Activated")
+		elif event.type == pygame.MOUSEBUTTONDOWN and inTrials == True  and done == False:
 			# Set the position of the mouse as x and y when clicked
 			x, y = event.pos
 			
@@ -267,43 +272,66 @@ while gameDone == False:
 			
 			# Sucessful click on the circle object
 			if click == 1:
-				print("Click successful")
 				##Do other stuff as well like print to a file about the trial info, errors, time completed, etc
-				mouseMovement = pygame.mouse.get_rel()
-				print("Second Mouse: " + str(mouseMovement))
-				# Prepair Print Line and write record to file
-				printLine = (str(trialDoneCounter) + ", " + str(currentTrial) +", "+ 
-						   str(gameMilliseconds-trialStartTime) + ", "+ str(clickErrors) + 
-						   str(mouseMovement[0]+mouseMovement[1]) + "\n")
-				f.write(printLine)
+				# Completed Trials count
+				trialDoneCounter += 1
+					
+				# if tutorial is finished
+				if tutorialsComplete == True:
+					# Total Trial Runtime accumulator and total mouse pixles traveled 
+					RunTimeAccumulator += gameMilliseconds-trialStartTime
+					totalPixTrav += pixlesTravled
+					
+					print( str(currentTrial[1]) + " * 2")
+					print( str(currentTrial[0]) + " * 2")
+					
+					# Prepair Print Line and write record to file
+					printLine = (str(trialDoneCounter) + "; " + str(currentTrial) +"; "+ 
+							   str(gameMilliseconds-trialStartTime) + "; "+ str(clickErrors) + "; " +
+							   str(pixlesTravled) + "; " + str( math.log( (2*currentTrial[1])//(currentTrial[0]*2), 2)  ) + "\n")
+					f.write(printLine)
 				
 				# Clear the surface of the completed trial circle
 				DISPLAYSURF.fill( (255,255,255) )
 				## Display a success message or make a success sound
 				successImg = pygame.image.load('success.png')
-				DISPLAYSURF.blit(successImg, [0, 0])	
+				DISPLAYSURF.blit(successImg, [0, 0])
+				# Now not in a trial
+				inTrials = False				
 					
 			# Unsuccessful click on the circle object
 			else:
-				print("click unsuccessful")
 				# If currently in a trial
-				if inTrials == True:
-					print("Click is trial misclick error")
+				if inTrials == True and tutorialsComplete == True:
 					# Increase click error count 
 					clickErrors += 1
+					totalErrors += 1
 		
 		elif blocksCompleted == 11:
-			print("10 blocks completed")
-			##Do other stuff as well like print maybe
+			# Deactivate further game input
 			inTrials = False
+			done = True
+			# Load the end screen image
 			endImg = pygame.image.load('end.png')
 			DISPLAYSURF.blit(endImg, [0, 0])
+			# Display end game statistics (Misclicks, total Trials, Seconds in Time/trial)
+			label = myfont.render("Total Misclicks: "+ str(totalErrors) , 1, (1,1,1))
+			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4))
+			label = myfont.render("Total Trials: "+ str(trialDoneCounter) , 1, (1,1,1))
+			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 + 10))
+			label = myfont.render("Average Time/Trial (Milliseconds): "+ str(RunTimeAccumulator//trialDoneCounter) , 1, (1,1,1))
+			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 + 20)) 
+			
+			print(str(totalPixTrav) + "/" + str(trialDoneCounter) )
+			
+			label = myfont.render("Average Mouse Distance Traveled/Trial (Pixles): "+ str(totalPixTrav//trialDoneCounter) , 1, (1,1,1))
+			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 + 30)) 
 	
-	# render text
+	# render current progress text
 	if inTrials == True:
-		label = myfont.render("Trials: "+ str(trialDoneCounter) + "/120" , 1, (0,0,0))
+		label = myfont.render("On Trial: "+ str(trialDoneCounter+1) + "/120" , 1, (1,1,1))
 		DISPLAYSURF.blit(label, (WIDTH//2 - 100 - 150, 20))
-		label = myfont.render("Trial Blocks: "+ str(blocksCompleted) + "/10" , 1, (0,0,0))
+		label = myfont.render("Trial Blocks: "+ str(blocksCompleted) + "/10" , 1, (1,1,1))
 		DISPLAYSURF.blit(label, (WIDTH//2 - 100 +150, 20))	
 		
 	# Draw/Update the screen		
