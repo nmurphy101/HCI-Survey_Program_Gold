@@ -133,7 +133,7 @@ PossibleTrialsList = [ [Sm,Cl,Le], [Sm,Fa,Le], [Sm,Cl,Ri], [Sm,Fa,Ri],
 # Initiliztion of the trial block (1 block = 12 trials)
 trialBlock = []
 
-# The random function will give a predictible pattern each run
+# The random function will give a predictible random pattern each run
 seed(50)
 
 # Generate the first block of random trials
@@ -262,6 +262,8 @@ while True:
 						# Load and display the completed trial feedback image to player
 						TutorialCompleteImg = pygame.image.load('TutorialComplete.png')
 						DISPLAYSURF.blit(TutorialCompleteImg, [0, 0])
+						inTrials = False
+						
 				
 		# Mouse Press Down Event		
 		elif event.type == pygame.MOUSEBUTTONDOWN and inTrials == True  and done == False:
