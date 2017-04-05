@@ -202,7 +202,7 @@ while True:
 					instructionsComplete = True
 				
 				# Start doing trials (tutorial first)
-				elif instructionsComplete == True and trialCompleted == True:
+				if instructionsComplete == True and trialCompleted == True:
 					# Now in trials
 					inTrials = True
 					trialCompleted = False
@@ -315,13 +315,13 @@ while True:
 			DISPLAYSURF.blit(endImg, [0, 0])
 			# Display end game statistics (Misclicks, total Trials, Milliseconds in Time/trial, total pixles mouse traveled/trial)
 			label = myfont.render("Total Misclicks: "+ str(totalErrors) , 3, (1,1,1))
-			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 - 100))
+			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 - 50))
 			label = myfont.render("Total Trials: "+ str(trialDoneCounter) , 3, (1,1,1))
-			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 + 20 - 100))
+			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 + 20 - 50))
 			label = myfont.render("Average Time/Trial (Milliseconds): "+ str(RunTimeAccumulator//trialDoneCounter) , 3, (1,1,1))
-			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 + 40 - 100)) 
+			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 + 40 - 50)) 
 			label = myfont.render("Average Mouse Distance Traveled/Trial (Pixles): "+ str(totalPixTrav//trialDoneCounter) , 3, (1,1,1))
-			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 + 60 - 100)) 
+			DISPLAYSURF.blit(label, (WIDTH//2 - 250, HEIGHT//2 + HEIGHT//4 + 60 - 50)) 
 	
 	# render current progress text
 	if inTrials == True:
